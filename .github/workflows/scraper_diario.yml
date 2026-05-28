@@ -2,7 +2,7 @@ name: OCASA Scraper Diario
 
 on:
   schedule:
-    - cron: '40 21 * * *'   # todos los días 9 AM Argentina (UTC-3)
+    - cron: '00 22 * * *'   # todos los días 9 AM Argentina (UTC-3)
   workflow_dispatch:         # botón para correr manualmente cuando quieras
 
 jobs:
