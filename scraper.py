@@ -45,6 +45,7 @@ SUCURSALES_MAPS = [
     ("Soldati",    "https://www.google.com/maps/place/OCASA+SOLDATI/@-34.6718192,-58.4397183,17z/data=!4m8!3m7!1s0x95bccb1d848c3c71:0xf1726a297dd6b1aa!8m2!3d-34.6718193!4d-58.4348527!9m1!1b1!16s%2Fg%2F11lhzbv5qk?entry=ttu&g_ep=EgoyMDI2MDUyNS4wIKXMDSoASAFQAw%3D%3D"),
     ("Echeverría", "https://www.google.com/maps/place/OCASA/@-34.5557448,-58.4465084,17z/data=!4m8!3m7!1s0x95bcb5cb33d2855b:0x984181d02bb35b83!8m2!3d-34.5557448!4d-58.4439281!9m1!1b1!16s%2Fg%2F11g6xqq0t7?entry=ttu&g_ep=EgoyMDI2MDUyNS4wIKXMDSoASAFQAw%3D%3D"),
     ("Sarandí",    "https://www.google.com/maps/place/Ocasa+Sarand%C3%AD/@-34.6701739,-58.3265334,17z/data=!4m8!3m7!1s0x95a333bfbd6eb737:0x31b54046b2f0c628!8m2!3d-34.6701739!4d-58.3239531!9m1!1b1!16s%2Fg%2F11k02c43mv?entry=ttu&g_ep=EgoyMDI2MDUyNS4wIKXMDSoASAFQAw%3D%3D"),
+    ("Avellaneda", "https://www.google.com/maps/place/Ocasa+Avellaneda/@-34.6590219,-58.3824913,17z/data=!4m8!3m7!1s0x95bccca9abc34c61:0x18ac53c51cc00e61!8m2!3d-34.6590219!4d-58.3799164!9m1!1b1!16s%2Fg%2F11gf9f9p8x?entry=ttu&g_ep=EgoyMDI2MDUyNi4wIKXMDSoASAFQAw%3D%3D"),
 ]
 TQS_MAX_PAGINAS = 5
 
