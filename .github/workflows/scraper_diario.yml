@@ -3,7 +3,7 @@ name: OCASA Scraper Diario
 on:
   schedule:
     - cron: '00 22 * * *'   # 19:00 Argentina
-    - cron: '00 12 * * *'   # 09:00 Argentina
+    - cron: '30 14 * * *'   # 09:00 Argentina
   workflow_dispatch:
 
 jobs:
