@@ -101,7 +101,7 @@ if EN_COLAB:
     DEPLOYMENT  = "gpt-5.4-mini-testing-anders-graffe"
     API_VERSION = "2025-04-01-preview"
 else:
-    API_KEY     = os.environ["AZURE_OPENAI_KEY"]
+    API_KEY     = os.environ.get("AZURE_OPENAI_KEY", "3poVK637WZcUsMi6F3yCli3z7CF1ylIeqo61GIHeCDnxbIaVFJFxJQQJ99CDACYeBjFXJ3w3AAABACOGpwgp")
     ENDPOINT    = os.environ.get("AZURE_OPENAI_ENDPOINT",    "https://oai-customer-experience.openai.azure.com/")
     DEPLOYMENT  = os.environ.get("AZURE_OPENAI_DEPLOYMENT",  "gpt-5.4-mini-testing-anders-graffe")
     API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION", "2025-04-01-preview")
