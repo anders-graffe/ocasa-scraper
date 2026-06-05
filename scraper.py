@@ -3,20 +3,20 @@
 # Etapa 1: Scraping Google Maps + TuQuejaSuma → raw_reviews
 # Etapa 2: Enriquecimiento Azure OpenAI → reviews_enriquecidas
 # Entorno: Auto-detecta Colab vs GitHub Actions
+# Versión productiva — 2026-06-05
 # ============================================================
 
 # ── CELDA 1 — Instalación (correr solo una vez por sesión) ──
 import subprocess
-subprocess.run(["pip", "install", "playwright", "openai", "gspread", "google-auth", 
+subprocess.run(["pip", "install", "playwright", "openai", "gspread", "google-auth",
                 "beautifulsoup4", "lxml", "tqdm", "pandas", "nest_asyncio", "-q"], check=True)
 subprocess.run(["playwright", "install", "chromium"], check=True)
 subprocess.run(["playwright", "install-deps", "chromium"], check=True)
 print("✅ Todo instalado")
 
-import re, os, json, math, time, hashlib
+# ── Imports ────────────────────────────────────────────────
+import re, os, json, asyncio, math, time, hashlib
 import nest_asyncio
-nest_asyncio.apply()
-asyncio.run(main())
 import pandas as pd
 import gspread
 from datetime import datetime, date
@@ -24,7 +24,10 @@ from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from openai import AzureOpenAI
 
-# ── Detectar entorno ───────────────────────────────────────────
+# Fix para Colab (event loop ya corriendo)
+nest_asyncio.apply()
+
+# ── Detectar entorno ───────────────────────────────────────
 try:
     import google.colab
     EN_COLAB = True
@@ -73,13 +76,13 @@ else:
     )
     gc = gspread.authorize(creds)
 
-sh               = gc.open("reviews_ocasa")
-ws_raw           = sh.worksheet("raw_reviews")
-RAW_HEADERS      = ["fecha_scraping","autor","texto_original","estrellas",
-                    "fecha_review","fuente","origen","url_fuente","procesado"]
-ENRICH_HEADERS   = ["hash_review","fecha_estimada","autor","review","estrellas",
-                    "palabras_clave","cliente","servicio","punto_de_dolor",
-                    "sentimiento","sucursal","fuente","resumen_review","url_fuente"]
+sh             = gc.open("reviews_ocasa")
+ws_raw         = sh.worksheet("raw_reviews")
+RAW_HEADERS    = ["fecha_scraping","autor","texto_original","estrellas",
+                  "fecha_review","fuente","origen","url_fuente","procesado"]
+ENRICH_HEADERS = ["hash_review","fecha_estimada","autor","review","estrellas",
+                  "palabras_clave","cliente","servicio","punto_de_dolor",
+                  "sentimiento","sucursal","fuente","resumen_review","url_fuente"]
 print(f"✅ Google Sheets conectado: {sh.title}")
 
 
@@ -333,7 +336,6 @@ async def scrape_tuquejasuma_diario(textos_existentes, max_paginas=5):
 
 
 async def etapa_scraping():
-    """Carga textos existentes, scrapea fuentes y guarda nuevos en raw_reviews."""
     print("\n" + "="*55)
     print("ETAPA 1 — SCRAPING")
     print("="*55)
@@ -504,13 +506,11 @@ def analizar_review(texto):
 
 
 def etapa_enrichment():
-    """Lee raw_reviews, enriquece los no procesados y escribe en reviews_enriquecidas."""
     print("\n" + "="*55)
     print("ETAPA 2 — ENRICHMENT")
     print("="*55)
 
-    # ── Leer hashes ya procesados ──────────────────────────────
-    print(f"🔍 Leyendo reviews_enriquecidas...")
+    print("🔍 Leyendo reviews_enriquecidas...")
     ya_procesados = set()
     primera_vez   = False
 
@@ -531,9 +531,8 @@ def etapa_enrichment():
         primera_vez = True
         print("   ➕ Pestaña 'reviews_enriquecidas' creada")
 
-    # ── Leer raw_reviews frescos via API ───────────────────────
-    print(f"\n📥 Leyendo raw_reviews (API directa)...")
-    datos_raw   = ws_raw.get_all_values()
+    print("\n📥 Leyendo raw_reviews (API directa)...")
+    datos_raw = ws_raw.get_all_values()
     if len(datos_raw) <= 1:
         print("⚠️ Sin datos en raw_reviews")
         return 0
@@ -554,7 +553,6 @@ def etapa_enrichment():
         print("✅ Sin registros nuevos — reviews_enriquecidas al día")
         return 0
 
-    # ── Procesar con Azure OpenAI ──────────────────────────────
     if EN_COLAB:
         from tqdm.notebook import tqdm
     else:
@@ -562,9 +560,9 @@ def etapa_enrichment():
 
     resultados = []
     for _, row in tqdm(df_nuevos.iterrows(), total=len(df_nuevos), desc="Enriqueciendo"):
-        hash_id = row["hash_review"]
-        texto   = safe(row.get("texto_original",""))
-        fuente  = safe(row.get("fuente",""))
+        hash_id  = row["hash_review"]
+        texto    = safe(row.get("texto_original",""))
+        fuente   = safe(row.get("fuente",""))
         analisis = analizar_review(texto)
 
         resultados.append({
@@ -586,9 +584,7 @@ def etapa_enrichment():
         time.sleep(0.3)
 
     print(f"\n✅ {len(resultados)} reviews enriquecidas")
-
-    # ── Escribir en Google Sheets ──────────────────────────────
-    print(f"📤 Escribiendo en reviews_enriquecidas...")
+    print("📤 Escribiendo en reviews_enriquecidas...")
 
     if primera_vez or len(ya_procesados) == 0:
         ws_out.append_row(ENRICH_HEADERS, value_input_option="RAW")
@@ -611,26 +607,22 @@ def etapa_enrichment():
 
 
 # ══════════════════════════════════════════════════════════════
-# MAIN — corre las dos etapas en secuencia
+# MAIN
 # ══════════════════════════════════════════════════════════════
 async def main():
     inicio_total = datetime.now()
     print(f"\n🚀 Pipeline OCASA — {inicio_total.strftime('%Y-%m-%d %H:%M')}")
     print(f"🔗 Sheet: https://docs.google.com/spreadsheets/d/{sh.id}")
 
-    # Etapa 1: Scraping
-    nuevos_scrapeados = await etapa_scraping()
-
-    # Etapa 2: Enrichment (siempre corre, no solo si hay nuevos)
-    # así procesa cualquier pendiente de corridas anteriores también
+    nuevos_scrapeados   = await etapa_scraping()
     nuevos_enriquecidos = etapa_enrichment()
 
     fin_total = datetime.now()
     dur = (fin_total - inicio_total).seconds
     print(f"\n{'='*55}")
     print(f"🏁 Pipeline completado")
-    print(f"   Scrapeados:    {nuevos_scrapeados}")
-    print(f"   Enriquecidos:  {nuevos_enriquecidos}")
+    print(f"   Scrapeados:     {nuevos_scrapeados}")
+    print(f"   Enriquecidos:   {nuevos_enriquecidos}")
     print(f"   Duración total: {dur//60}m {dur%60}s")
     print(f"{'='*55}")
 
